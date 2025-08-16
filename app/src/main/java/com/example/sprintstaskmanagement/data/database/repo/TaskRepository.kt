@@ -22,7 +22,7 @@ class TaskRepository(
 
     // --- Project operations ---
     suspend fun insertProject(project: Project) = projectDao.insertProject(project)
-    fun getProjectsForUser(ownerId: Int) = projectDao.getProjectsForUser(ownerId)
+    fun getProjectsForUser(ownerId: Int) = projectDao.getProjectsForUserFlow(ownerId)
 
     // --- Task operations ---
     suspend fun insertTask(task: Task) = taskDao.insertTask(task)

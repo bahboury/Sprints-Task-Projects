@@ -17,12 +17,13 @@ import com.example.sprintstaskmanagement.viewmodel.ProjectListViewModel
 
 @Composable
 fun ProjectListScreen(
-    projectListViewModel: ProjectListViewModel = viewModel()
+    modifier: Modifier = Modifier,
+    viewModel: ProjectListViewModel = viewModel()
 ) {
     val padding = 16.dp
-    val projects by projectListViewModel.projects.collectAsState()
+    val projects by viewModel.projects.collectAsState()
 
-    Column {
+    Column(modifier = modifier){
         if (projects.isEmpty()) {
             Text(
                 text = "No projects found",
