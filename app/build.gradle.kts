@@ -86,4 +86,5 @@ dependencies {
 
     // ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.compose) // or latest
+    implementation(libs.androidx.lifecycle.livedata.ktx)
 }

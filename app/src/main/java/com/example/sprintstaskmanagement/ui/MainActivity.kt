@@ -7,13 +7,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.example.sprintstaskmanagement.data.database.AppDatabase
+import com.example.sprintstaskmanagement.data.database.model.Attachment
 import com.example.sprintstaskmanagement.data.database.model.Project
+import com.example.sprintstaskmanagement.data.database.model.Task
+import com.example.sprintstaskmanagement.data.database.model.User
 import com.example.sprintstaskmanagement.data.database.repo.TaskRepository
 import com.example.sprintstaskmanagement.ui.screens.ProjectListScreen
 import com.example.sprintstaskmanagement.ui.theme.SprintsTaskManagementTheme
@@ -47,57 +52,96 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // 4. Get the ViewModel using the factory
                     val projectListViewModel =
                         ViewModelProvider(this, factory)[ProjectListViewModel::class.java]
 
-                    // 5. Pass the ViewModel to your UI
-                    ProjectListScreen(projectListViewModel)
+                    // 1. Wrap your content with a Scaffold
+                    Scaffold(
+                        topBar = {
+                            // You can place your top bar here, e.g., a TopAppBar
+                        }
+                    ) { innerPadding ->
+                        // 2. Pass the innerPadding to your screen composable
+                        ProjectListScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            viewModel = projectListViewModel
+                        )
+                    }
                 }
             }
         }
     }
-
     // This function can be called from onCreate() in MainActivity
     fun runDatabaseTest(context: Context) {
         val db = AppDatabase.getDatabase(context)
+        val userDao = db.userDao()
         val projectDao = db.projectDao()
+        val taskDao = db.taskDao()
+        val attachmentDao = db.attachmentDao()
         val ownerId = 1
 
         lifecycleScope.launch {
-            // --- 1. Demonstrate Suspend Query ---
+            // --- 1. Insert and Log User ---
+            Log.d("DB_TEST", "--- User Insert Demonstration ---")
+            val user = User(name = "John Doe", email = "john.doe@example.com")
+            val userId = userDao.insertUser(user)
+            Log.d("DB_TEST", "Inserted User: $user")
+
+            // --- 2. Insert and Log Project ---
+            Log.d("DB_TEST", "--- Project Insert Demonstration ---")
+            val project = Project(title = "First Project", ownerId = ownerId)
+            projectDao.insertProject(project)
+            Log.d("DB_TEST", "Inserted Project: $project")
+
+            // --- 3. Insert and Log Task ---
+            Log.d("DB_TEST", "--- Task Insert Demonstration ---")
+            val task = Task(description = "Complete UI design", projectId = 1)
+            taskDao.insertTask(task)
+            Log.d("DB_TEST", "Inserted Task: $task")
+
+            // --- 4. Insert and Log Attachment ---
+            Log.d("DB_TEST", "--- Attachment Insert Demonstration ---")
+            val attachment = Attachment(filePath = "\"F:\\schema.png\"", taskId = 1)
+            attachmentDao.insertAttachment(attachment)
+            Log.d("DB_TEST", "Inserted Attachment: $attachment")
+
+            // --- 5. Demonstrate Suspend Query ---
             Log.d("DB_TEST", "--- Suspend Query Demonstration ---")
-
-            // Insert a project
-            projectDao.insertProject(Project(title = "First Project", ownerId = ownerId))
-
-            // Perform a one-time fetch
             val projectsOneShot = projectDao.getProjectsForUserSuspend(ownerId)
             Log.d("DB_TEST", "Suspend Result: ${projectsOneShot.size} projects found.")
 
-            // Insert another project. The suspend query will not be notified.
+            // Insert another project
             projectDao.insertProject(Project(title = "Second Project", ownerId = ownerId))
+            Log.d("DB_TEST", "Inserted Project: Second Project")
 
-            // Re-run the suspend query to get the updated list
+            // Re-run the suspend query
             val projectsOneShotAgain = projectDao.getProjectsForUserSuspend(ownerId)
-            Log.d("DB_TEST", "Suspend Result (After new insert): ${projectsOneShotAgain.size} projects found.")
+            Log.d(
+                "DB_TEST",
+                "Suspend Result (After new insert): ${projectsOneShotAgain.size} projects found."
+            )
 
-            // --- 2. Demonstrate Flow Query ---
+            // --- 6. Demonstrate Flow Query ---
             Log.d("DB_TEST", "--- Flow Query Demonstration ---")
-
             val projectsFlow = projectDao.getProjectsForUserFlow(ownerId)
-
-            // Collect the initial value from the Flow
             val initialProjects = projectsFlow.first()
             Log.d("DB_TEST", "Flow Initial Result: ${initialProjects.size} projects found.")
 
-            // Insert another project. The Flow will automatically emit a new value.
+            // Insert another project
             projectDao.insertProject(Project(title = "Third Project", ownerId = ownerId))
+            Log.d("DB_TEST", "Inserted Project: Third Project")
 
-            // Now, collect again. The Flow will automatically emit the updated list.
+            // Collect updated Flow
             val updatedProjects = projectsFlow.first()
-            Log.d("DB_TEST", "Flow Updated Result (Automatic): ${updatedProjects.size} projects found.")
+            Log.d(
+                "DB_TEST",
+                "Flow Updated Result (Automatic): ${updatedProjects.size} projects found."
+            )
+
+            Log.d("DB_TEST", "--- Project With Tasks Demonstration ---")
+            val projectWithTasksFlow = projectDao.getProjectWithTasks(1)
+            val projectWithTasks = projectWithTasksFlow.first()
+            Log.d("DB_TEST", "Project with Tasks: $projectWithTasks")
         }
     }
 }
-
